@@ -1,0 +1,49 @@
+# How the extractor reaches each MCP server and which tools it calls.
+# ${VARS} are filled from the environment / .env file.
+#
+# Run `python -m extractor.run discover` first: it prints every tool each
+# server exposes with its argument schema. If a tool or argument name differs
+# from what is written here, change it here - no code changes needed.
+
+lookback_days: 30
+save_raw_responses: true   # writes each MCP response to data/raw/ for inspection
+
+servers:
+  ga4:
+    transport: stdio
+    command: analytics-mcp          # installed with: pip install analytics-mcp
+    args: []
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
+
+  meta:
+    transport: stdio
+    command: meta-ads-mcp           # installed with: pip install meta-ads-mcp
+    args: []
+    env:
+      META_ACCESS_TOKEN: ${META_ACCESS_TOKEN}
+    # Alternative: Meta's hosted MCP (open beta, OAuth sign-in). Only use this
+    # if you have a bearer token for it; the browser OAuth flow can't run
+    # unattended on a server.
+    # transport: http
+    # url: https://mcp.facebook.com/ads
+    # headers:
+    #   Authorization: Bearer ${META_MCP_TOKEN}
+
+ga4:
+  property_id: ${GA4_PROPERTY_ID}
+  tool: run_report
+  dimensions: [date, sessionDefaultChannelGroup]
+  metrics: [sessions, totalUsers, newUsers, keyEvents, totalRevenue]
+
+meta:
+  account_id: ${META_AD_ACCOUNT_ID}
+  tool: get_insights
+  level: campaign
+  # Extra arguments merged into every get_insights call.
+  extra_args:
+    access_token: ${META_ACCESS_TOKEN}
+    limit: 500
+  # Meta "action_type" values counted as conversions.
+  purchase_action_types: [purchase, offsite_conversion.fb_pixel_purchase, omni_purchase]
